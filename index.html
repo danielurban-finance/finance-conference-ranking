@@ -375,14 +375,14 @@ function allowedTiers(){
   return s;
 }
 
-fetch("data.json").then(r => r.json()).then(d => { DATA = d; init(); loadStats(); })
+fetch("data.json?v=" + Date.now()).then(r => r.json()).then(d => { DATA = d; init(); loadStats(); })
   .catch(e => { document.getElementById("summary").textContent =
     "Could not load data.json — serve this folder over http (e.g. `python -m http.server`) "
     + "rather than opening the file directly."; });
 
 // ---------- Descriptive statistics (aggregates-only stats.json) ----------
 function loadStats(){
-  fetch("stats.json").then(r => r.json()).then(renderStats)
+  fetch("stats.json?v=" + Date.now()).then(r => r.json()).then(renderStats)
     .catch(() => { const s = document.getElementById("stats"); if (s) s.style.display = "none"; });
 }
 function renderStats(S){
