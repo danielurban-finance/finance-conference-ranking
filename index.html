@@ -64,7 +64,10 @@
   /* collapsible descriptive-statistics section */
   .statsbox > summary { cursor:pointer; list-style:none; outline:none; }
   .statsbox > summary::-webkit-details-marker { display:none; }
-  .statsbox > summary .statsh2 { font-size:20px; font-weight:700; color:var(--ink); }
+  .statsbox > summary .statsh3 { font-size:15px; font-weight:700; color:var(--ink); }
+  .presets button.on { background:var(--bar); border-color:var(--accent); color:var(--ink); }
+  .uniconf { font-size:13px; color:var(--muted); margin:2px 0 10px; }
+  .uniconf select { font-size:13px; }
   .statsbox > summary::before { content:"\25B8\00a0"; color:var(--muted); font-weight:700; }
   .statsbox[open] > summary::before { content:"\25BE\00a0"; }
   .statsbox > summary .stshint { font-weight:400; }
@@ -188,6 +191,7 @@
       <a href="#ranking">Ranking</a>
       <a href="#charts">Charts</a>
       <a href="#stats">Descriptive stats</a>
+      <a href="#unisection">Universities</a>
       <a href="#methodology">How it works</a>
       <a href="#about">About</a>
     </nav>
@@ -292,26 +296,29 @@
 
 <!-- DESCRIPTIVE STATISTICS (full width) -->
 <div class="wide">
-  <details class="card statsbox" id="stats">
-    <summary><span class="statsh2">Descriptive statistics</span><span class="hint stshint"> — click to expand</span></summary>
-    <p class="summary">This section shows the number of papers by conference and year, and
-      — for the major conferences — which universities attend. All figures are aggregates
+  <section class="card" id="stats">
+    <h2>Descriptive statistics</h2>
+    <p class="summary">Number of papers by conference and year. All figures are aggregates
       (no per-paper data).</p>
+    <details class="statsbox">
+      <summary><span class="statsh3">Conference size &amp; year coverage</span><span class="hint stshint"> — click to expand</span></summary>
+      <p class="hint">Papers per conference per year (blank = no program found for that year; darker = larger;
+        <i>italic*</i> = small sample, fewer than 10 papers, so that year's rate is unreliable).</p>
+      <div id="statsCoverage" class="statwrap"></div>
+    </details>
+  </section>
+</div>
 
-    <h3 class="subh">Conference size &amp; year coverage</h3>
-    <p class="hint">Papers per conference per year (blank = no program found for that year; darker = larger;
-      <i>italic*</i> = small sample, fewer than 10 papers, so that year's rate is unreliable).</p>
-    <div id="statsCoverage" class="statwrap"></div>
-
-    <!-- Paper-overlap panel hidden for now (re-enable by uncommenting here + the JS block).
-    <h3 class="subh">Paper overlap across conferences</h3>
-    <p class="hint" id="statsOverlapText"></p>
-    <div id="statsOverlap" class="statwrap"></div>
-    -->
-
-    <h3 class="subh">University distribution <span class="hint" id="statsUniNote"></span></h3>
+<!-- UNIVERSITY DISTRIBUTION (full width, own section) -->
+<div class="wide">
+  <section class="card" id="unisection">
+    <h2>University distribution</h2>
+    <p class="summary">Which institutions present most — pick a group, or a single conference.
+      <span class="hint" id="statsUniNote"></span></p>
+    <div class="presets" id="uniGroupBtns"></div>
+    <div class="uniconf">or a single conference: <select id="uniSel"></select></div>
     <div id="statsUni" class="statwrap"></div>
-  </details>
+  </section>
 </div>
 
 <!-- METHODOLOGY (full width) -->
@@ -418,36 +425,37 @@ function renderStats(S){
 
   // -- paper overlap (panel hidden for now; markup commented out in the stats section) --
 
-  // -- university distribution --
-  const U = S.universities, uniDiv = document.getElementById("statsUni");
-  const bars = (arr) => { const m = arr.length ? arr[0][1] : 1; return arr.map(([n, v]) =>
+  // -- university distribution (own section: group BUTTONS + a single-conference dropdown) --
+  const U = S.universities, uniSec = document.getElementById("unisection");
+  const bars = (arr) => { const m = arr.length ? arr[0][1] : 1; return arr.slice(0, 15).map(([n, v]) =>
     `<div class="ubar"><span class="ul">${esc(n)}</span>`
     + `<span class="ubarfill" style="width:${Math.max(2, 100 * v / m).toFixed(0)}px"></span>`
     + `<span class="uv">${v}</span></div>`).join(''); };
-  if (U.overall && U.overall.length){
-    let u = `<div class="unicol"><h4>Most-represented universities</h4>${bars(U.overall.slice(0, 15))}</div>`;
-    u += '<div class="unicol"><h4>By group or conference: <select id="uniSel"></select></h4><div id="uniPer"></div></div>';
-    uniDiv.innerHTML = u;
+  if (U && U.confs_with_data && U.confs_with_data.length){
+    const out = document.getElementById("statsUni");
+    const gbtns = document.getElementById("uniGroupBtns");
     const selU = document.getElementById("uniSel");
-    const grps = U.group_order || [];
-    let opts = "";
-    if (grps.length) opts += '<optgroup label="Groups">'
-      + grps.map(g => `<option value="g:${esc(g)}">${esc(g)}</option>`).join('') + '</optgroup>';
-    opts += '<optgroup label="Individual conferences">'
-      + U.confs_with_data.map(c => `<option value="${esc(c)}">${esc(lab(c))}</option>`).join('') + '</optgroup>';
-    selU.innerHTML = opts;
-    const showU = key => {
-      const arr = key.startsWith("g:") ? ((U.per_group || {})[key.slice(2)] || [])
-                                        : (U.per_conf[key] || []);
-      document.getElementById("uniPer").innerHTML = bars(arr.slice(0, 15));
-    };
-    const _defU = grps.includes("Big 5") ? "g:Big 5"
-                : (U.confs_with_data.includes("AFA") ? "AFA" : U.confs_with_data[0]);
-    selU.value = _defU; selU.onchange = () => showU(selU.value); showU(_defU);
+    const clearActive = () => gbtns.querySelectorAll("button").forEach(b => b.classList.remove("on"));
+    // group buttons
+    gbtns.innerHTML = "";
+    (U.group_order || []).forEach(g => {
+      const b = document.createElement("button");
+      b.textContent = g;
+      b.onclick = () => { clearActive(); b.classList.add("on"); selU.value = "";
+                          out.innerHTML = bars((U.per_group || {})[g] || []); };
+      gbtns.appendChild(b);
+    });
+    // single-conference dropdown
+    selU.innerHTML = '<option value="">— select —</option>'
+      + U.confs_with_data.map(c => `<option value="${esc(c)}">${esc(lab(c))}</option>`).join('');
+    selU.onchange = () => { if (selU.value){ clearActive(); out.innerHTML = bars(U.per_conf[selU.value] || []); } };
     document.getElementById("statsUniNote").textContent =
-      `(affiliation data available for ${U.confs_with_data.length} of `
-      + `${DATA.confs.length} conferences: ` + U.confs_with_data.map(lab).join(", ") + ")";
-  } else { uniDiv.innerHTML = '<p class="hint">No affiliation data available.</p>'; }
+      `(${U.confs_with_data.length} of ${DATA.confs.length} conferences have affiliation data)`;
+    // default: Big 5 group (else first group, else first conference)
+    const firstBtn = gbtns.querySelector("button");
+    if (firstBtn) firstBtn.click();
+    else { selU.value = U.confs_with_data[0]; selU.onchange(); }
+  } else if (uniSec) { uniSec.style.display = "none"; }
 }
 
 function init(){
