@@ -67,6 +67,12 @@
   main { max-width:1080px; margin:0 auto; padding:8px 24px 14px;
          display:grid; grid-template-columns:300px 1fr; gap:22px; align-items:start; }
   .rightcol { display:flex; flex-direction:column; gap:22px; min-width:0; }
+  /* desktop: keep the Options panel in view while scrolling the (possibly long) results.
+     Sticks just below the sticky nav; scrolls internally if taller than the viewport. */
+  @media (min-width:821px){
+    #controls { position:sticky; top:48px; align-self:start;
+                max-height:calc(100vh - 60px); overflow:auto; }
+  }
   @media (max-width:820px){ main{ grid-template-columns:1fr; } }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px;
           padding:16px 18px; }
@@ -247,7 +253,7 @@
 </div>
 <main>
   <!-- CONTROLS -->
-  <section class="card">
+  <section class="card" id="controls">
     <h2>Options</h2>
 
     <div class="ctrl">
