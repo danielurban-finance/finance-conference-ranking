@@ -61,6 +61,14 @@
   .confsearch { width:100%; box-sizing:border-box; margin:6px 0 4px; padding:4px 8px;
            font-size:13px; border:1px solid var(--line); border-radius:6px; }
   .jlist label.hidden, .jlist .grouphd.hidden { display:none; }
+  /* collapsible descriptive-statistics section */
+  .statsbox > summary { cursor:pointer; list-style:none; outline:none; }
+  .statsbox > summary::-webkit-details-marker { display:none; }
+  .statsbox > summary .statsh2 { font-size:20px; font-weight:700; color:var(--ink); }
+  .statsbox > summary::before { content:"\25B8\00a0"; color:var(--muted); font-weight:700; }
+  .statsbox[open] > summary::before { content:"\25BE\00a0"; }
+  .statsbox > summary .stshint { font-weight:400; }
+  .statsbox[open] > summary .stshint { display:none; }
   .jlist label { display:flex; align-items:center; gap:7px; font-size:13px;
                  padding:2px 0; cursor:pointer; }
   .jlist .cnt { margin-left:auto; color:var(--muted); font-size:11px; }
@@ -172,8 +180,8 @@
       later published in a journal set you choose — in the same spirit as
       <a href="https://doi.org/10.1016/j.jempfin.2025.101652" target="_blank"
       rel="noopener">Hou, Smajlbegović &amp; Urban (2025, <i>Journal of Empirical
-      Finance</i> 84, 101652)</a>. A presented paper is counted as published when we can
-      link it to a journal article &mdash; by matching paper titles and author names, and
+      Finance</i> 84, 101652)</a>. A presented paper is counted as published when it can be
+      linked to a journal article &mdash; by matching paper titles and author names, and
       corroborating with the acknowledgement footnotes in which authors thank the conferences
       where the work was presented. All computation runs in your browser.</div>
     <nav class="sitemap">
@@ -284,8 +292,8 @@
 
 <!-- DESCRIPTIVE STATISTICS (full width) -->
 <div class="wide">
-  <section class="card" id="stats">
-    <h2>Descriptive statistics</h2>
+  <details class="card statsbox" id="stats">
+    <summary><span class="statsh2">Descriptive statistics</span><span class="hint stshint"> — click to expand</span></summary>
     <p class="summary">Program coverage and size by year, how much papers circulate across
       conferences, and — for the major conferences — which universities attend. These are
       aggregate figures (no per-paper data).</p>
@@ -303,7 +311,7 @@
 
     <h3 class="subh">University distribution <span class="hint" id="statsUniNote"></span></h3>
     <div id="statsUni" class="statwrap"></div>
-  </section>
+  </details>
 </div>
 
 <!-- METHODOLOGY (full width) -->
