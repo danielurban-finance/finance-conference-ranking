@@ -45,12 +45,24 @@
   h1 { margin:0 0 4px; font-size:24px; }
   .sub { color:var(--muted); font-size:14px; }
   .sub a { color:var(--accent); }
-  .sitemap { margin-top:11px; font-size:13px; display:flex; flex-wrap:wrap;
-             align-items:center; }
+  /* sticky section nav: scrolls with the page, then pins to the top */
+  .navbar { position:sticky; top:0; z-index:50; background:rgba(255,255,255,.95);
+            backdrop-filter:saturate(1.4) blur(6px); border-bottom:1px solid var(--line);
+            box-shadow:0 1px 3px rgba(0,0,0,.05); }
+  .sitemap { max-width:1080px; margin:0 auto; padding:10px 24px; font-size:13px;
+             display:flex; flex-wrap:wrap; align-items:center; }
   .sitemap a { color:var(--accent); text-decoration:none; font-weight:600; }
   .sitemap a:not(:last-child)::after { content:"·"; color:#c7ced6;
              margin:0 11px; font-weight:400; }
   .sitemap a:hover { color:var(--ese-dark); text-decoration:underline; }
+  /* keep anchored sections clear of the sticky nav when jumped to */
+  section.card[id] { scroll-margin-top:54px; }
+  /* mobile: keep the sticky nav to a single, horizontally-swipeable row */
+  @media (max-width:640px){
+    .sitemap { flex-wrap:nowrap; overflow-x:auto; white-space:nowrap;
+               padding:9px 16px; -webkit-overflow-scrolling:touch; }
+    .sitemap a:not(:last-child)::after { margin:0 8px; }
+  }
   main { max-width:1080px; margin:0 auto; padding:8px 24px 14px;
          display:grid; grid-template-columns:300px 1fr; gap:22px; align-items:start; }
   .rightcol { display:flex; flex-direction:column; gap:22px; min-width:0; }
@@ -217,17 +229,19 @@
       linked to a journal article &mdash; by matching paper titles and author names, and
       corroborating with the acknowledgement footnotes in which authors thank the conferences
       where the work was presented. All computation runs in your browser.</div>
-    <nav class="sitemap">
-      <a href="#ranking">Ranking</a>
-      <a href="#charts">Charts</a>
-      <a href="#unisection">Universities</a>
-      <a href="#acksection">Acknowledgements</a>
-      <a href="#stats">Descriptive stats</a>
-      <a href="#methodology">How it works</a>
-      <a href="#about">About</a>
-    </nav>
   </div>
 </header>
+</div>
+<div class="navbar">
+  <nav class="sitemap">
+    <a href="#ranking">Ranking</a>
+    <a href="#charts">Charts</a>
+    <a href="#unisection">Universities</a>
+    <a href="#acksection">Acknowledgements</a>
+    <a href="#stats">Descriptive stats</a>
+    <a href="#methodology">How it works</a>
+    <a href="#about">About</a>
+  </nav>
 </div>
 <main>
   <!-- CONTROLS -->
