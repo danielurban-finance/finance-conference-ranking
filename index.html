@@ -36,11 +36,12 @@
   header img.logo { width:138px; height:138px; border-radius:14px; flex:none;
            box-shadow:0 1px 3px rgba(0,0,0,.12); }
   header .htext { min-width:0; }
-  /* mobile: a fixed, smaller logo top-aligned with the heading */
+  /* mobile: stack the logo above the heading so the text spans the full width
+     (side-by-side leaves the paragraph in too narrow a column on a phone) */
   @media (max-width:640px){
-    header { padding:16px 16px 14px; gap:14px; align-items:flex-start; }
-    header img.logo { width:60px; height:60px; aspect-ratio:auto; border-radius:9px; }
-    header h1 { font-size:20px; }
+    header { padding:16px 16px 14px; gap:10px; flex-direction:column; align-items:flex-start; }
+    header img.logo { width:58px; height:58px; aspect-ratio:auto; border-radius:9px; }
+    header h1 { font-size:21px; }
   }
   h1 { margin:0 0 4px; font-size:24px; }
   .sub { color:var(--muted); font-size:14px; }
@@ -228,7 +229,8 @@
       Finance</i> 84, 101652)</a>. A presented paper is counted as published when it can be
       linked to a journal article &mdash; by matching paper titles and author names, and
       corroborating with the acknowledgement footnotes in which authors thank the conferences
-      where the work was presented. All computation runs in your browser.</div>
+      where the work was presented (<a href="#methodology">see How it works</a> for the full
+      method). All computation runs in your browser.</div>
   </div>
 </header>
 </div>
@@ -328,15 +330,17 @@
     <p class="hint" id="chartmissing"></p>
   </section>
 
-  <!-- ROBUSTNESS / SENSITIVITY CHART (collapsed by default) -->
-  <section class="card">
+  <!-- ROBUSTNESS / SENSITIVITY CHART (intro always visible; chart collapsible) -->
+  <section class="card" id="robustness">
+    <h2>Robustness across matching methods</h2>
+    <p class="summary">Is the ranking an artefact of how papers are matched to publications? Adding
+      the matching procedures one at a time — from identical-title matches only, through strong
+      title/author matches, acknowledgement-verified matches, to all matches (the procedures are
+      described under <a href="#methodology">How it works</a>) — leaves the order largely unchanged:
+      roughly parallel, non-crossing lines mean the ranking is stable regardless of which matching
+      methods are used.</p>
     <details class="statsbox">
-      <summary><span class="statsh3">Robustness across matching methods</span><span class="hint stshint"> — click to expand</span></summary>
-      <p class="summary" style="margin-top:10px">Is the ranking an artefact of how papers are
-        matched to publications? This view adds the matching procedures one at a time — from
-        identical-title matches only, through strong title/author matches, acknowledgement-verified
-        matches, and finally all matches. Roughly parallel, non-crossing lines mean the ranking is
-        stable regardless of which matching methods are used.</p>
+      <summary><span class="statsh3">Show the robustness chart</span><span class="hint stshint"> — click to expand</span></summary>
       <p class="summary" id="chartsub2"></p>
       <div id="chart2" class="chartbox"></div>
       <div class="legend" id="legend2"></div>
