@@ -31,9 +31,17 @@
          color:var(--ink); background:var(--bg); }
   .topbar { border-bottom:4px solid var(--ese-yellow); background:#fff; }
   header { padding:22px 24px 18px; max-width:1080px; margin:0 auto;
-           display:flex; align-items:center; gap:18px; }
-  header img.logo { width:62px; height:62px; border-radius:8px; flex:none; }
+           display:flex; align-items:center; gap:24px; }
+  /* sized to roughly span the heading block (top of H1 to bottom of the sitemap) */
+  header img.logo { width:138px; height:138px; border-radius:14px; flex:none;
+           box-shadow:0 1px 3px rgba(0,0,0,.12); }
   header .htext { min-width:0; }
+  /* mobile: a fixed, smaller logo top-aligned with the heading */
+  @media (max-width:640px){
+    header { padding:16px 16px 14px; gap:14px; align-items:flex-start; }
+    header img.logo { width:60px; height:60px; aspect-ratio:auto; border-radius:9px; }
+    header h1 { font-size:20px; }
+  }
   h1 { margin:0 0 4px; font-size:24px; }
   .sub { color:var(--muted); font-size:14px; }
   .sub a { color:var(--accent); }
@@ -43,7 +51,7 @@
   .sitemap a:not(:last-child)::after { content:"·"; color:#c7ced6;
              margin:0 11px; font-weight:400; }
   .sitemap a:hover { color:var(--ese-dark); text-decoration:underline; }
-  main { max-width:1080px; margin:0 auto; padding:8px 24px 60px;
+  main { max-width:1080px; margin:0 auto; padding:8px 24px 14px;
          display:grid; grid-template-columns:300px 1fr; gap:22px; align-items:start; }
   .rightcol { display:flex; flex-direction:column; gap:22px; min-width:0; }
   @media (max-width:820px){ main{ grid-template-columns:1fr; } }
@@ -97,6 +105,17 @@
   .ubar .uv { color:var(--muted); flex:none; }
   .unicol { display:inline-block; vertical-align:top; width:49%; min-width:340px; }
   .unicol h4 { margin:6px 0; font-size:13px; }
+  /* acknowledgements */
+  .ackctrls { display:flex; flex-wrap:wrap; gap:16px 22px; align-items:center;
+              margin:6px 0 10px; font-size:13px; }
+  .ackctrls label { font-weight:600; color:var(--ink); }
+  .ackctrls select { width:auto; min-width:150px; }
+  .ackctrls .ackany { font-weight:400; color:var(--muted); display:inline-flex;
+              align-items:center; gap:6px; }
+  table.acktab td.cn { max-width:none; font-weight:600; }
+  table.acktab td.pct { font-variant-numeric:tabular-nums; min-width:64px; }
+  table.acktab tr.anyrow td { border-top:2px solid #d9c84a; font-style:italic; }
+  table.acktab tr.anyrow td.cn { font-style:normal; color:var(--muted); }
   /* small-sample indicator */
   .ssmark { color:#c0392b; font-weight:700; cursor:help; }
   tr.smallrow td { color:var(--muted); }
@@ -168,7 +187,7 @@
   .method .jcols li { break-inside:avoid; }
   .method .stat { font-weight:600; color:var(--ink); }
   .method a { color:var(--accent); }
-  .wide { max-width:1080px; margin:0 auto; padding:6px 24px 0; }
+  .wide { max-width:1080px; margin:0 auto; padding:11px 24px 0; }
   footer { max-width:1080px; margin:0 auto; padding:6px 24px 50px; }
   footer .card { border-top:4px solid var(--ese-yellow); }
   footer h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em;
@@ -201,8 +220,9 @@
     <nav class="sitemap">
       <a href="#ranking">Ranking</a>
       <a href="#charts">Charts</a>
-      <a href="#stats">Descriptive stats</a>
       <a href="#unisection">Universities</a>
+      <a href="#acksection">Acknowledgements</a>
+      <a href="#stats">Descriptive stats</a>
       <a href="#methodology">How it works</a>
       <a href="#about">About</a>
     </nav>
@@ -294,18 +314,62 @@
     <p class="hint" id="chartmissing"></p>
   </section>
 
-  <!-- ROBUSTNESS / SENSITIVITY CHART -->
+  <!-- ROBUSTNESS / SENSITIVITY CHART (collapsed by default) -->
   <section class="card">
-    <h2>Robustness across matching methods</h2>
-    <p class="summary" id="chartsub2"></p>
-    <div id="chart2" class="chartbox"></div>
-    <div class="legend" id="legend2"></div>
+    <details class="statsbox">
+      <summary><span class="statsh3">Robustness across matching methods</span><span class="hint stshint"> — click to expand</span></summary>
+      <p class="summary" style="margin-top:10px">Is the ranking an artefact of how papers are
+        matched to publications? This view adds the matching procedures one at a time — from
+        identical-title matches only, through strong title/author matches, acknowledgement-verified
+        matches, and finally all matches. Roughly parallel, non-crossing lines mean the ranking is
+        stable regardless of which matching methods are used.</p>
+      <p class="summary" id="chartsub2"></p>
+      <div id="chart2" class="chartbox"></div>
+      <div class="legend" id="legend2"></div>
+    </details>
   </section>
 
   </div><!-- /rightcol -->
 </main>
 
-<!-- DESCRIPTIVE STATISTICS (full width) -->
+<!-- UNIVERSITY DISTRIBUTION (full width, own section) -->
+<div class="wide">
+  <section class="card" id="unisection">
+    <h2>University distribution</h2>
+    <p class="summary">Which institutions present most — pick a group, or a single conference.
+      <span class="hint" id="statsUniNote"></span></p>
+    <div class="presets" id="uniGroupBtns"></div>
+    <div class="uniconf">or a single conference: <select id="uniSel"></select></div>
+    <div id="statsUni" class="statwrap"></div>
+  </section>
+</div>
+
+<!-- ACKNOWLEDGEMENTS (full width, own section) -->
+<div class="wide">
+  <section class="card" id="acksection">
+    <h2>Conference acknowledgements</h2>
+    <p class="summary" id="ackIntro"></p>
+
+    <h3 class="subh">Which conferences are thanked, by journal set</h3>
+    <p class="hint">Share of published articles in each journal set whose acknowledgement footnote
+      names the conference (an article may thank several). Shading compares within a column.</p>
+    <div id="ackCross" class="statwrap"></div>
+
+    <h3 class="subh">Acknowledgement trend over time</h3>
+    <div class="ackctrls">
+      <label>Journal set <select id="ackCatSel"></select></label>
+      <label>Conferences <select id="ackGrpSel"></select></label>
+      <label class="ackany"><input type="checkbox" id="ackAnyChk" checked> show “any conference” line</label>
+    </div>
+    <p class="hint" id="ackTrendSub"></p>
+    <div id="ackTrend" class="chartbox"></div>
+    <div class="legend" id="ackLegend"></div>
+
+    <p class="hint" id="ackNote"></p>
+  </section>
+</div>
+
+<!-- DESCRIPTIVE STATISTICS (full width, moved to bottom) -->
 <div class="wide">
   <section class="card" id="stats">
     <h2>Descriptive statistics</h2>
@@ -317,18 +381,6 @@
         <i>italic*</i> = small sample, fewer than 10 papers, so that year's rate is unreliable).</p>
       <div id="statsCoverage" class="statwrap"></div>
     </details>
-  </section>
-</div>
-
-<!-- UNIVERSITY DISTRIBUTION (full width, own section) -->
-<div class="wide">
-  <section class="card" id="unisection">
-    <h2>University distribution</h2>
-    <p class="summary">Which institutions present most — pick a group, or a single conference.
-      <span class="hint" id="statsUniNote"></span></p>
-    <div class="presets" id="uniGroupBtns"></div>
-    <div class="uniconf">or a single conference: <select id="uniSel"></select></div>
-    <div id="statsUni" class="statwrap"></div>
   </section>
 </div>
 
@@ -467,6 +519,144 @@ function renderStats(S){
     if (firstBtn) firstBtn.click();
     else { selU.value = U.confs_with_data[0]; selU.onchange(); }
   } else if (uniSec) { uniSec.style.display = "none"; }
+
+  renderAck(S);
+}
+
+// ---------- Conference acknowledgements panel ----------
+let ACK = null;
+function renderAck(S){
+  const A = S.acknowledgments, sec = document.getElementById("acksection");
+  if (!A || !A.categories || !A.categories.length){ if (sec) sec.style.display = "none"; return; }
+  ACK = A;
+  const esc = s => String(s).replace(/[&<>]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
+  const pc = A.per_category;
+
+  const t3 = pc.top3fin, t6 = pc.top6fin, te = pc.top5econ;
+  document.getElementById("ackIntro").innerHTML =
+    `Authors routinely record where a paper was presented in its acknowledgement footnote. `
+    + (t3 ? `About <b>${t3.pct_any}%</b> of published Top-3 finance articles ` : "")
+    + (t6 ? `and <b>${t6.pct_any}%</b> of Top-6 finance articles ` : "")
+    + `mention <i>some</i> conference`
+    + (te ? `, versus <b>${te.pct_any}%</b> of Top-5 economics articles (which present mostly at`
+          + ` economics conferences). ` : ". ")
+    + (t3 ? `Of the Top-3 articles, <b>${t3.pct_tracked}%</b> name one of the conferences ranked`
+          + ` here; the rest cite venues outside this set. The table breaks this down by journal set.` : "");
+
+  renderAckCross(A);
+
+  // trend controls
+  const catSel = document.getElementById("ackCatSel");
+  catSel.innerHTML = A.categories.map(c => `<option value="${c.key}">${esc(c.label)}</option>`).join("");
+  const grpSel = document.getElementById("ackGrpSel");
+  const grps = Object.keys(A.groups || {});
+  grpSel.innerHTML = grps.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("");
+  if (grps.includes("Big 5")) grpSel.value = "Big 5";
+  catSel.onchange = grpSel.onchange = drawAckTrend;
+  document.getElementById("ackAnyChk").onchange = drawAckTrend;
+  drawAckTrend();
+
+  document.getElementById("ackNote").innerHTML =
+    "Based on published (publisher) acknowledgement footnotes. <b>“Any conference”</b> detects a"
+    + " conference mention in the footnote text (any venue) and is in line with prior evidence"
+    + " (Reinartz &amp; Urban, 2017, find ~79% for Top-3 finance); the per-conference figures and"
+    + " <b>“any ranked conference”</b> count only the conferences ranked on this site, so they are a"
+    + " lower bound. The denominator is every article we hold in the journal set (footnote coverage"
+    + " varies by publisher). A paper that names several conferences counts once for each.";
+}
+
+// Conference x journal-set cross-tabulation (Big 5 rows + an "any conference" row).
+function renderAckCross(A){
+  const esc = s => String(s).replace(/[&<>]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[m]));
+  const cats = A.categories;
+  const pctOf = (catKey, conf) => { const c = A.per_category[catKey];
+    return c && c.n_articles ? 100 * (c.confs[conf] || 0) / c.n_articles : 0; };
+  // per-column max (Top-5 econ values are tiny vs finance) so shading compares within a column
+  const colMax = {}; cats.forEach(c => { colMax[c.key] =
+    Math.max(0.1, ...(A.groups["Big 5"] || []).map(conf => pctOf(c.key, conf))); });
+  const cell = (catKey, v) => {
+    const a = (0.10 + 0.90 * v / colMax[catKey]).toFixed(2);
+    return `<td class="pct" style="background:rgba(245,203,0,${v ? a : 0});">${v.toFixed(1)}%</td>`; };
+
+  const big5 = (A.groups["Big 5"] || []).slice()
+    .sort((a, b) => pctOf("top6fin", b) - pctOf("top6fin", a));
+  let h = '<table class="heat acktab"><thead><tr><th>Conference</th>'
+        + cats.map(c => `<th>${esc(c.label)}</th>`).join('') + '</tr></thead><tbody>';
+  big5.forEach(conf => {
+    h += `<tr><td class="cn">${esc(A.conf_labels[conf] || conf)}</td>`
+       + cats.map(c => cell(c.key, pctOf(c.key, conf))).join('') + '</tr>';
+  });
+  h += '<tr class="anyrow"><td class="cn">Any ranked conference</td>'
+     + cats.map(c => `<td class="pct">${(A.per_category[c.key].pct_tracked).toFixed(1)}%</td>`).join('')
+     + '</tr>';
+  h += '<tr class="anyrow"><td class="cn" title="footnote mentions any conference, including ones not ranked here">Any conference <span style="font-weight:400">(incl. untracked)</span></td>'
+     + cats.map(c => `<td class="pct">${(A.per_category[c.key].pct_any).toFixed(1)}%</td>`).join('')
+     + '</tr></tbody></table>';
+  document.getElementById("ackCross").innerHTML = h;
+}
+
+// Interactive trend: pick a journal set + a conference group; draw each conference's share of
+// that set's articles per year. Optional thick grey "any conference" line.
+function drawAckTrend(){
+  const A = ACK; if (!A) return;
+  const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const catKey = document.getElementById("ackCatSel").value;
+  const grp = document.getElementById("ackGrpSel").value;
+  const showAny = document.getElementById("ackAnyChk").checked;
+  const T = A.trend.per_category[catKey], years = A.trend.years;
+  const totals = T.totals;
+  const pct = (counts, i) => totals[i] ? 100 * (counts[i] || 0) / totals[i] : null;
+
+  // conferences in the chosen group, ordered by total mentions in this category, capped for legibility
+  const sum = arr => arr.reduce((s, v) => s + v, 0);
+  let series = (A.groups[grp] || []).map(c => ({ c, label: A.conf_labels[c] || c, counts: T.confs[c] || years.map(() => 0) }))
+    .filter(s => sum(s.counts) > 0)
+    .sort((a, b) => sum(b.counts) - sum(a.counts)).slice(0, 10);
+  const anyLine = showAny ? years.map((_, i) => pct(T.any, i)) : null;
+
+  const W = 720, H = 330, padL = 40, padR = 14, padT = 12, padB = 28;
+  const allV = series.flatMap(s => s.counts.map((_, i) => pct(s.counts, i))).concat(anyLine || []).filter(v => v != null);
+  let vmax = Math.max(2, ...allV); vmax = Math.ceil(vmax / 10) * 10;
+  const X = y => years.length <= 1 ? padL + (W-padL-padR)/2
+              : padL + (y - years[0]) / (years[years.length-1] - years[0]) * (W-padL-padR);
+  const Y = v => H - padB - (v / vmax) * (H - padT - padB);
+  let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img">`;
+  const gstep = vmax <= 20 ? 5 : 10;
+  for (let t = 0; t <= vmax + 1e-9; t += gstep){
+    const yy = Y(t);
+    svg += `<line class="grid" x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}"/>`;
+    svg += `<text x="${padL-6}" y="${yy+3}" text-anchor="end">${t}%</text>`;
+  }
+  const stepX = years.length > 8 ? 2 : 1;
+  years.forEach((y, i) => { if (i % stepX === 0)
+    svg += `<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle">${y}</text>`; });
+  svg += `<line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
+  if (anyLine){
+    svg += `<polyline fill="none" stroke="#9aa3ad" stroke-width="3" points="${
+      years.map((y, i) => anyLine[i] != null ? `${X(y).toFixed(1)},${Y(anyLine[i]).toFixed(1)}` : "").join(" ").trim()}"/>`;
+  }
+  series.forEach((s, si) => {
+    const color = COLORS[si % COLORS.length];
+    const pts = years.map((y, i) => { const v = pct(s.counts, i); return v == null ? null : `${X(y).toFixed(1)},${Y(v).toFixed(1)}`; }).filter(Boolean);
+    svg += `<polyline fill="none" stroke="${color}" stroke-width="2.2" points="${pts.join(" ")}"/>`;
+    years.forEach((y, i) => { const v = pct(s.counts, i); if (v == null) return;
+      svg += `<g><title>${esc(s.label)} ${y}: ${v.toFixed(1)}% (${s.counts[i]}/${totals[i]})</title>`
+           + `<circle cx="${X(y).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.6" fill="${color}" stroke="#fff" stroke-width="1"/></g>`; });
+  });
+  if (!series.length) svg += `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#9aa">No acknowledgements for this group in this journal set</text>`;
+  svg += `</svg>`;
+  document.getElementById("ackTrend").innerHTML = svg;
+
+  const catLab = A.categories.find(c => c.key === catKey).label;
+  document.getElementById("ackTrendSub").innerHTML =
+    `Share of that year's <b>${esc(catLab)}</b> articles whose acknowledgements name each `
+    + `<b>${esc(grp)}</b> conference.` + (showAny ? " The thick grey line is the share thanking any conference." : "");
+  const leg = (anyLine ? [`<span class="legitem"><svg width="22" height="10"><line x1="1" y1="5" x2="21" y2="5" stroke="#9aa3ad" stroke-width="3"/></svg>Any conference</span>`] : [])
+    .concat(series.map((s, si) => {
+      const color = COLORS[si % COLORS.length];
+      return `<span class="legitem"><svg width="22" height="10"><line x1="1" y1="5" x2="21" y2="5" stroke="${color}" stroke-width="2.2"/></svg>${esc(s.label)}</span>`;
+    }));
+  document.getElementById("ackLegend").innerHTML = leg.join("");
 }
 
 function init(){
