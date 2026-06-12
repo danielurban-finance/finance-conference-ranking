@@ -897,9 +897,10 @@ function confStyle(ci){
     marker: MARKERS[ci % MARKERS.length]
   };
 }
-function marker(cx, cy, kind, color, r){
+function marker(cx, cy, kind, color, r, hollow){
   cx = +cx; cy = +cy;
-  const f = `fill="${color}"`;
+  // hollow = white fill + coloured outline, used to flag right-censored (still-publishing) years
+  const f = hollow ? `fill="#fff" stroke="${color}" stroke-width="1.5"` : `fill="${color}"`;
   if (kind === "square")   return `<rect x="${cx-r}" y="${cy-r}" width="${2*r}" height="${2*r}" ${f}/>`;
   if (kind === "triangle") return `<polygon points="${cx},${cy-r} ${cx+r},${cy+r} ${cx-r},${cy+r}" ${f}/>`;
   if (kind === "diamond")  return `<polygon points="${cx},${cy-r} ${cx+r},${cy} ${cx},${cy+r} ${cx-r},${cy}" ${f}/>`;
@@ -1047,18 +1048,9 @@ function drawTimeChart(years, agg, metricRate){
   years.forEach((y, i) => { if (i % stepX === 0)
     svg += `<text x="${X(y)}" y="${H-padB+16}" text-anchor="middle">${y}</text>`; });
   svg += `<line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
-  // Right-censoring band: the most recent cohorts have had little time to publish, so their
-  // rates are biased downward. Shade the last two collected years (when in view) as a reminder.
+  // Right-censoring: the most recent cohorts have had little time to publish, so their points
+  // are biased downward. We mark them with HOLLOW markers (see caption) rather than a shaded box.
   const censorStart = DATA.year_max - 1;
-  if (years.length > 1 && censorStart <= years[years.length - 1]){
-    const bx = Math.max(padL, X(Math.max(years[0], censorStart)));
-    svg += `<rect x="${bx.toFixed(1)}" y="${padT}" width="${(W - padR - bx).toFixed(1)}" `
-         + `height="${H - padB - padT}" fill="rgba(120,130,140,.09)"/>`
-         + `<line x1="${bx.toFixed(1)}" y1="${padT}" x2="${bx.toFixed(1)}" y2="${H - padB}" `
-         + `stroke="#c7ced6" stroke-width="1" stroke-dasharray="3,3"/>`
-         + `<text x="${(W - padR - 4).toFixed(1)}" y="${padT + 12}" text-anchor="end" `
-         + `style="font-size:10px" fill="#8a93a0">still publishing</text>`;
-  }
   for (const s of vis){
     // break the line at missing years rather than bridging across the gap
     const segs = []; let seg = [];
@@ -1072,8 +1064,10 @@ function drawTimeChart(years, agg, metricRate){
     for (const p of s.pts){
       if (p.v == null) continue;
       const lbl = metricRate ? (p.v*100).toFixed(1)+"%" : p.v;
-      svg += `<g><title>${esc(clabel(s.ci))} ${p.y}: ${lbl} (${p.n}/${p.d})</title>`
-           + marker(X(p.y).toFixed(1), Y(p.v).toFixed(1), s.marker, s.color, 3.4) + `</g>`;
+      const cens = p.y >= censorStart;                       // recent cohort, still publishing
+      svg += `<g><title>${esc(clabel(s.ci))} ${p.y}: ${lbl} (${p.n}/${p.d})`
+           + `${cens ? " — recent cohort, still publishing" : ""}</title>`
+           + marker(X(p.y).toFixed(1), Y(p.v).toFixed(1), s.marker, s.color, 3.4, cens) + `</g>`;
     }
   }
   if (!vis.length) svg += `<text x="${W/2}" y="${H/2}" text-anchor="middle"`
@@ -1086,8 +1080,8 @@ function drawTimeChart(years, agg, metricRate){
     (metricRate ? "Publication rate" : "Number of publications")
     + " by conference year, using the selected journals and confidence. Click a"
     + " conference below to show/hide it; hover a point for details. Years with no"
-    + " collected program are skipped. <b>The shaded recent years are right-censored</b> —"
-    + " papers presented then have had less time to be published, so those points are biased downward.";
+    + " collected program are skipped. <b>Hollow markers</b> are the most recent cohorts, which are"
+    + " right-censored — papers presented then are still being published, so those points are biased downward.";
 
   // Note below the chart: list visible conferences' missing/incomplete program-years
   // (interior gaps with no data, plus years flagged as incomplete e.g. low-res scans).
