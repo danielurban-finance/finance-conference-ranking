@@ -1,0 +1,6 @@
+# never commit underlying data to the public site repo
+*.xlsx
+*.csv
+*.pdf
+*.log
+*.tmp*
