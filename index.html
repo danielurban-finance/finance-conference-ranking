@@ -424,7 +424,8 @@ function renderStats(S){
     U.confs_with_data.forEach(c => { const o = document.createElement("option");
       o.value = c; o.textContent = lab(c); selU.appendChild(o); });
     const showU = c => document.getElementById("uniPer").innerHTML = bars(U.per_conf[c] || []);
-    selU.onchange = () => showU(selU.value); showU(U.confs_with_data[0]);
+    const _defU = U.confs_with_data.includes("AFA") ? "AFA" : U.confs_with_data[0];
+    selU.value = _defU; selU.onchange = () => showU(selU.value); showU(_defU);
     document.getElementById("statsUniNote").textContent =
       `(affiliation data available for ${U.confs_with_data.length} of `
       + `${DATA.confs.length} conferences: ` + U.confs_with_data.map(lab).join(", ") + ")";
