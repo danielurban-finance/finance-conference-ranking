@@ -294,9 +294,9 @@
 <div class="wide">
   <details class="card statsbox" id="stats">
     <summary><span class="statsh2">Descriptive statistics</span><span class="hint stshint"> — click to expand</span></summary>
-    <p class="summary">Program coverage and size by year, how much papers circulate across
-      conferences, and — for the major conferences — which universities attend. These are
-      aggregate figures (no per-paper data).</p>
+    <p class="summary">This section shows the number of papers by conference and year, and
+      — for the major conferences — which universities attend. All figures are aggregates
+      (no per-paper data).</p>
 
     <h3 class="subh">Conference size &amp; year coverage</h3>
     <p class="hint">Papers per conference per year (blank = no program found for that year; darker = larger;
@@ -426,13 +426,23 @@ function renderStats(S){
     + `<span class="uv">${v}</span></div>`).join(''); };
   if (U.overall && U.overall.length){
     let u = `<div class="unicol"><h4>Most-represented universities</h4>${bars(U.overall.slice(0, 15))}</div>`;
-    u += '<div class="unicol"><h4>By conference: <select id="uniSel"></select></h4><div id="uniPer"></div></div>';
+    u += '<div class="unicol"><h4>By group or conference: <select id="uniSel"></select></h4><div id="uniPer"></div></div>';
     uniDiv.innerHTML = u;
     const selU = document.getElementById("uniSel");
-    U.confs_with_data.forEach(c => { const o = document.createElement("option");
-      o.value = c; o.textContent = lab(c); selU.appendChild(o); });
-    const showU = c => document.getElementById("uniPer").innerHTML = bars(U.per_conf[c] || []);
-    const _defU = U.confs_with_data.includes("AFA") ? "AFA" : U.confs_with_data[0];
+    const grps = U.group_order || [];
+    let opts = "";
+    if (grps.length) opts += '<optgroup label="Groups">'
+      + grps.map(g => `<option value="g:${esc(g)}">${esc(g)}</option>`).join('') + '</optgroup>';
+    opts += '<optgroup label="Individual conferences">'
+      + U.confs_with_data.map(c => `<option value="${esc(c)}">${esc(lab(c))}</option>`).join('') + '</optgroup>';
+    selU.innerHTML = opts;
+    const showU = key => {
+      const arr = key.startsWith("g:") ? ((U.per_group || {})[key.slice(2)] || [])
+                                        : (U.per_conf[key] || []);
+      document.getElementById("uniPer").innerHTML = bars(arr.slice(0, 15));
+    };
+    const _defU = grps.includes("Big 5") ? "g:Big 5"
+                : (U.confs_with_data.includes("AFA") ? "AFA" : U.confs_with_data[0]);
     selU.value = _defU; selU.onchange = () => showU(selU.value); showU(_defU);
     document.getElementById("statsUniNote").textContent =
       `(affiliation data available for ${U.confs_with_data.length} of `
