@@ -359,7 +359,6 @@
     <div class="ackctrls">
       <label>Journal set <select id="ackCatSel"></select></label>
       <label>Conferences <select id="ackGrpSel"></select></label>
-      <label class="ackany"><input type="checkbox" id="ackAnyChk" checked> show “any conference” line</label>
     </div>
     <p class="hint" id="ackTrendSub"></p>
     <div id="ackTrend" class="chartbox"></div>
@@ -534,14 +533,13 @@ function renderAck(S){
 
   const t3 = pc.top3fin, t6 = pc.top6fin, te = pc.top5econ;
   document.getElementById("ackIntro").innerHTML =
-    `Authors routinely record where a paper was presented in its acknowledgement footnote. `
-    + (t3 ? `About <b>${t3.pct_any}%</b> of published Top-3 finance articles ` : "")
+    `Here we measure how often a published paper's acknowledgement footnote names one of the`
+    + ` conferences ranked on this site. `
+    + (t3 ? `<b>${t3.pct_any}%</b> of published Top-3 finance articles ` : "")
     + (t6 ? `and <b>${t6.pct_any}%</b> of Top-6 finance articles ` : "")
-    + `mention <i>some</i> conference`
-    + (te ? `, versus <b>${te.pct_any}%</b> of Top-5 economics articles (which present mostly at`
-          + ` economics conferences). ` : ". ")
-    + (t3 ? `Of the Top-3 articles, <b>${t3.pct_tracked}%</b> name one of the conferences ranked`
-          + ` here; the rest cite venues outside this set. The table breaks this down by journal set.` : "");
+    + `name at least one of these conferences`
+    + (te ? `, versus <b>${te.pct_any}%</b> of Top-5 economics articles. ` : ". ")
+    + `The table breaks this down by conference and journal set.`;
 
   renderAckCross(A);
 
@@ -553,16 +551,13 @@ function renderAck(S){
   grpSel.innerHTML = grps.map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join("");
   if (grps.includes("Big 5")) grpSel.value = "Big 5";
   catSel.onchange = grpSel.onchange = drawAckTrend;
-  document.getElementById("ackAnyChk").onchange = drawAckTrend;
   drawAckTrend();
 
   document.getElementById("ackNote").innerHTML =
-    "Based on published (publisher) acknowledgement footnotes. <b>“Any conference”</b> detects a"
-    + " conference mention in the footnote text (any venue) and is in line with prior evidence"
-    + " (Reinartz &amp; Urban, 2017, find ~79% for Top-3 finance); the per-conference figures and"
-    + " <b>“any ranked conference”</b> count only the conferences ranked on this site, so they are a"
-    + " lower bound. The denominator is every article we hold in the journal set (footnote coverage"
-    + " varies by publisher). A paper that names several conferences counts once for each.";
+    "Counts a published article when its acknowledgement footnote names one of the conferences"
+    + " ranked here. The denominator is every article we hold in the journal set, so figures are a"
+    + " lower bound (footnote coverage varies by publisher, and conferences not ranked here are not"
+    + " counted). A paper that names several ranked conferences counts once for each.";
 }
 
 // Conference x journal-set cross-tabulation (Big 5 rows + an "any conference" row).
@@ -586,10 +581,7 @@ function renderAckCross(A){
     h += `<tr><td class="cn">${esc(A.conf_labels[conf] || conf)}</td>`
        + cats.map(c => cell(c.key, pctOf(c.key, conf))).join('') + '</tr>';
   });
-  h += '<tr class="anyrow"><td class="cn">Any ranked conference</td>'
-     + cats.map(c => `<td class="pct">${(A.per_category[c.key].pct_tracked).toFixed(1)}%</td>`).join('')
-     + '</tr>';
-  h += '<tr class="anyrow"><td class="cn" title="footnote mentions any conference, including ones not ranked here">Any conference <span style="font-weight:400">(incl. untracked)</span></td>'
+  h += '<tr class="anyrow"><td class="cn" title="article names at least one of the conferences ranked on this site">Any ranked conference</td>'
      + cats.map(c => `<td class="pct">${(A.per_category[c.key].pct_any).toFixed(1)}%</td>`).join('')
      + '</tr></tbody></table>';
   document.getElementById("ackCross").innerHTML = h;
@@ -602,7 +594,6 @@ function drawAckTrend(){
   const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
   const catKey = document.getElementById("ackCatSel").value;
   const grp = document.getElementById("ackGrpSel").value;
-  const showAny = document.getElementById("ackAnyChk").checked;
   const T = A.trend.per_category[catKey], years = A.trend.years;
   const totals = T.totals;
   const pct = (counts, i) => totals[i] ? 100 * (counts[i] || 0) / totals[i] : null;
@@ -612,10 +603,9 @@ function drawAckTrend(){
   let series = (A.groups[grp] || []).map(c => ({ c, label: A.conf_labels[c] || c, counts: T.confs[c] || years.map(() => 0) }))
     .filter(s => sum(s.counts) > 0)
     .sort((a, b) => sum(b.counts) - sum(a.counts)).slice(0, 10);
-  const anyLine = showAny ? years.map((_, i) => pct(T.any, i)) : null;
 
   const W = 720, H = 330, padL = 40, padR = 14, padT = 12, padB = 28;
-  const allV = series.flatMap(s => s.counts.map((_, i) => pct(s.counts, i))).concat(anyLine || []).filter(v => v != null);
+  const allV = series.flatMap(s => s.counts.map((_, i) => pct(s.counts, i))).filter(v => v != null);
   let vmax = Math.max(2, ...allV); vmax = Math.ceil(vmax / 10) * 10;
   const X = y => years.length <= 1 ? padL + (W-padL-padR)/2
               : padL + (y - years[0]) / (years[years.length-1] - years[0]) * (W-padL-padR);
@@ -631,10 +621,6 @@ function drawAckTrend(){
   years.forEach((y, i) => { if (i % stepX === 0)
     svg += `<text x="${X(y)}" y="${H-padB+15}" text-anchor="middle">${y}</text>`; });
   svg += `<line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
-  if (anyLine){
-    svg += `<polyline fill="none" stroke="#9aa3ad" stroke-width="3" points="${
-      years.map((y, i) => anyLine[i] != null ? `${X(y).toFixed(1)},${Y(anyLine[i]).toFixed(1)}` : "").join(" ").trim()}"/>`;
-  }
   series.forEach((s, si) => {
     const color = COLORS[si % COLORS.length];
     const pts = years.map((y, i) => { const v = pct(s.counts, i); return v == null ? null : `${X(y).toFixed(1)},${Y(v).toFixed(1)}`; }).filter(Boolean);
@@ -650,12 +636,11 @@ function drawAckTrend(){
   const catLab = A.categories.find(c => c.key === catKey).label;
   document.getElementById("ackTrendSub").innerHTML =
     `Share of that year's <b>${esc(catLab)}</b> articles whose acknowledgements name each `
-    + `<b>${esc(grp)}</b> conference.` + (showAny ? " The thick grey line is the share thanking any conference." : "");
-  const leg = (anyLine ? [`<span class="legitem"><svg width="22" height="10"><line x1="1" y1="5" x2="21" y2="5" stroke="#9aa3ad" stroke-width="3"/></svg>Any conference</span>`] : [])
-    .concat(series.map((s, si) => {
+    + `<b>${esc(grp)}</b> conference.`;
+  const leg = series.map((s, si) => {
       const color = COLORS[si % COLORS.length];
       return `<span class="legitem"><svg width="22" height="10"><line x1="1" y1="5" x2="21" y2="5" stroke="${color}" stroke-width="2.2"/></svg>${esc(s.label)}</span>`;
-    }));
+    });
   document.getElementById("ackLegend").innerHTML = leg.join("");
 }
 
