@@ -216,6 +216,16 @@
   .byline { display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-size:13px; }
   .byline .who { font-weight:700; color:var(--ink); }
   .byline .sep { color:var(--line); }
+  .about-flex { display:flex; gap:22px; align-items:flex-start; }
+  .about-flex .about-body { flex:1; min-width:0; }
+  .portrait { flex:0 0 auto; width:104px; height:104px; border-radius:50%;
+              object-fit:cover; border:3px solid var(--ese-yellow);
+              box-shadow:0 1px 4px rgba(0,0,0,.15); }
+  @media (max-width:640px){
+    .about-flex { flex-direction:column; align-items:center; text-align:center; }
+    .about-flex .byline { justify-content:center; }
+    .portrait { width:96px; height:96px; }
+  }
   .method .tiertag { display:inline-block; background:#eef1f5; color:#6b7685;
     font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.03em;
     padding:1px 6px; border-radius:10px; vertical-align:middle; margin-left:3px;
@@ -418,6 +428,11 @@
 <footer>
   <section class="card" id="about">
     <h2>About</h2>
+    <div class="about-flex">
+      <a href="https://sites.google.com/view/danielurban/home" target="_blank"
+         rel="noopener"><img class="portrait" src="assets/daniel-urban.jpg"
+         alt="Daniel Urban"></a>
+      <div class="about-body">
     <div class="byline">
       <span class="who">Daniel Urban</span>
       <span class="sep">·</span>
@@ -441,6 +456,8 @@
     <p><b>Feedback &amp; inclusion.</b> Feedback is very welcome. Organisers of finance
        conferences who would like their conference added are warmly invited to
        <a href="mailto:urban@ese.eur.nl">get in touch</a>.</p>
+      </div>
+    </div>
   </section>
 </footer>
 
