@@ -33,6 +33,7 @@
   header { padding:22px 24px 18px; max-width:1080px; margin:0 auto;
            display:flex; align-items:center; gap:24px; }
   /* sized to roughly span the heading block (top of H1 to bottom of the sitemap) */
+  header a.logolink { flex:none; display:flex; line-height:0; border-radius:14px; }
   header img.logo { width:138px; height:138px; border-radius:14px; flex:none;
            box-shadow:0 1px 3px rgba(0,0,0,.12); }
   header .htext { min-width:0; }
@@ -80,6 +81,14 @@
              color:var(--muted); margin:0 0 12px; }
   .ctrl { margin-bottom:18px; }
   .ctrl > label { display:block; font-weight:600; font-size:13px; margin-bottom:6px; }
+  /* horizontal filter bar on top of the results (the ranking-shaping controls) */
+  .filterbar { display:flex; flex-wrap:wrap; gap:12px 20px; align-items:end; }
+  .filterbar .fctrl { display:flex; flex-direction:column; gap:5px; flex:1 1 160px; min-width:135px; }
+  .filterbar .fctrl > label { font-weight:600; font-size:13px; }
+  .filterbar select, .filterbar input[type=number] { width:100%; }
+  .filterbar .yearrow { display:flex; align-items:center; gap:6px; }
+  .filterbar .yearrow input[type=number] { width:64px; }
+  .filterbar .filterhint { flex-basis:100%; margin-top:0; }
   .presets button { font-size:12px; padding:4px 9px; margin:0 6px 6px 0; cursor:pointer;
             border:1px solid var(--line); background:#fff; border-radius:6px; }
   .presets button:hover { border-color:var(--accent); color:var(--accent); }
@@ -235,7 +244,10 @@
 <body>
 <div class="topbar">
 <header>
-  <img class="logo" src="assets/ese-logo.png" alt="Erasmus School of Economics">
+  <a class="logolink" href="https://www.eur.nl/en/ese" target="_blank" rel="noopener"
+     title="Erasmus School of Economics">
+    <img class="logo" src="assets/ese-logo.png" alt="Erasmus School of Economics">
+  </a>
   <div class="htext">
     <h1>Interactive Finance Conference Ranking</h1>
     <div class="sub">Rank the major finance conferences by the share of presented papers
@@ -278,26 +290,12 @@
       <input type="text" id="confsearch" class="confsearch" placeholder="Filter conferences…" autocomplete="off">
       <div class="jlist" id="conflist"></div>
     </div>
+  </section>
 
-    <div class="ctrl">
-      <label>Conference years</label>
-      <div class="yearrow">
-        <input type="number" id="ymin"> <span>to</span> <input type="number" id="ymax">
-      </div>
-    </div>
-
-    <div class="ctrl">
-      <label for="conf">Match confidence (minimum evidence)</label>
-      <select id="conf">
-        <option value="0">Identical titles only</option>
-        <option value="1">Strong title + author match</option>
-        <option value="2">+ Confirmed by acknowledgements</option>
-        <option value="3" selected>All matches (incl. weaker title-only)</option>
-      </select>
-      <div class="hint" id="confhint"></div>
-    </div>
-
-    <div class="ctrl">
+  <div class="rightcol">
+  <!-- FILTER BAR: the ranking-shaping controls, sitting on top of the results -->
+  <section class="card filterbar" id="filterbar">
+    <div class="fctrl">
       <label for="metric">Rank by</label>
       <select id="metric">
         <option value="rate">Publication rate (%)</option>
@@ -305,13 +303,35 @@
       </select>
     </div>
 
-    <div class="ctrl">
-      <label for="minp">Min. presented papers (drop thin cohorts)</label>
+    <div class="fctrl" id="fieldctrl" style="display:none">
+      <label for="field">Research field</label>
+      <select id="field"><option value="all">All fields</option></select>
+    </div>
+
+    <div class="fctrl">
+      <label>Conference years</label>
+      <div class="yearrow">
+        <input type="number" id="ymin"> <span>to</span> <input type="number" id="ymax">
+      </div>
+    </div>
+
+    <div class="fctrl">
+      <label for="conf">Match confidence</label>
+      <select id="conf">
+        <option value="0">Identical titles only</option>
+        <option value="1">Strong title + author match</option>
+        <option value="2">+ Confirmed by acknowledgements</option>
+        <option value="3" selected>All matches (incl. weaker title-only)</option>
+      </select>
+    </div>
+
+    <div class="fctrl">
+      <label for="minp">Min. presented papers</label>
       <div class="yearrow"><input type="number" id="minp" value="0" min="0"></div>
     </div>
+    <div class="hint filterhint" id="confhint"></div>
   </section>
 
-  <div class="rightcol">
   <!-- RESULTS -->
   <section class="card" id="ranking">
     <h2>Ranking</h2>
@@ -464,6 +484,21 @@
 <script>
 let DATA = null, sel = new Set(), sortKey = "val", sortDir = -1;
 let confSel = new Set(), chartMode = "time";
+let highlightCi = null;   // conference clicked on a chart -> emphasise its line, dim the rest
+let fieldSel = "all";     // "all" or a field index -> restrict ranking to one research field
+
+// The cells consumed by the ranking/charts. Default = field-agnostic DATA.rows (one count per
+// paper). With a field selected, swap to the field-tagged cells for that field (JEF Section 3.2),
+// so rate = share of THAT FIELD's papers later published. Cached so a render only filters once.
+let _arCache = { key: null, rows: null };
+function activeRows(){
+  if (fieldSel === "all" || !DATA.field_rows || !DATA.field_rows.length) return DATA.rows;
+  if (_arCache.key === fieldSel) return _arCache.rows;
+  const f = +fieldSel;
+  const rows = DATA.field_rows.filter(r => r[4] === f).map(r => [r[0], r[1], r[2], r[3], r[5]]);
+  _arCache = { key: fieldSel, rows };
+  return rows;
+}
 const COLORS = ["#2b6cb0", "#dd6b20", "#38a169", "#805ad5", "#e53e3e", "#0891b2"];
 const SMALL_SAMPLE = 10;   // conference-cohorts below this many presented papers are flagged (rate unreliable)
 
@@ -717,6 +752,23 @@ function init(){
   [ymin, ymax, document.getElementById("conf"), document.getElementById("metric"),
    document.getElementById("minp")].forEach(el => el.oninput = render);
 
+  // research-field selector (JEF Section 3.2): only shown if data.json carries field assignments
+  const fieldEl = document.getElementById("field");
+  if (DATA.fields && DATA.fields.length && DATA.field_rows && DATA.field_rows.length){
+    DATA.fields.forEach((f, i) => {
+      const o = document.createElement("option");
+      o.value = String(i); o.textContent = f;
+      fieldEl.appendChild(o);
+    });
+    document.getElementById("fieldctrl").style.display = "";
+    fieldEl.title =
+      "Rank within one research field. Papers are classified by keywords in their title and "
+      + "session name (the JEF word bank); with a field selected, the rate is the share of "
+      + "THAT field's papers later published. Use ‘Min. presented papers’ to hide conferences "
+      + "with few in-field papers.";
+    fieldEl.onchange = () => { fieldSel = fieldEl.value; render(); };
+  }
+
   // sortable headers
   document.querySelectorAll("th[data-sort]").forEach(th => th.onclick = () => {
     const k = th.dataset.sort;
@@ -819,7 +871,7 @@ function compute(){
   const allow = allowedTiers();
   const denom = {}, num = {};
   DATA.confs.forEach((_, ci) => { denom[ci] = 0; num[ci] = 0; });
-  for (const [ci, yr, ji, ti, n] of DATA.rows){
+  for (const [ci, yr, ji, ti, n] of activeRows()){
     if (!confSel.has(ci) || yr < y0 || yr > y1) continue;
     if (incompleteYears(ci).includes(yr)) continue;   // under-parsed/partial years don't count
     denom[ci] += n;
@@ -898,10 +950,13 @@ function render(){
 
   const nJ = sel.size;
   const totN = rows.reduce((s,r)=>s+r.num,0), totD = rows.reduce((s,r)=>s+r.denom,0);
+  const fieldPill = (fieldSel !== "all" && DATA.fields && DATA.fields[+fieldSel])
+    ? `<span class="pill">${DATA.fields[+fieldSel]}</span> field · ` : "";
   document.getElementById("summary").innerHTML =
+    fieldPill +
     `<span class="pill">${nJ} journal${nJ!==1?"s":""}</span> selected · ` +
     `${document.getElementById("ymin").value}–${document.getElementById("ymax").value} · ` +
-    `${totN} of ${totD} presented papers published`;
+    `${totN} of ${totD} ${fieldSel !== "all" ? "in-field " : ""}presented papers published`;
 
   drawChart();
   drawRobustness();
@@ -931,10 +986,36 @@ function marker(cx, cy, kind, color, r){
 function esc(s){ return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
 function clabel(ci){ return (DATA.conf_labels && DATA.conf_labels[ci]) || DATA.confs[ci]; }
 
+// ---- click-to-highlight one conference's line ----
+// When highlightCi is set, that conference's line/markers are drawn thicker and fully opaque
+// while every other line is thinned and faded, so a single line stands out among many.
+function lineEmph(ci){
+  if (highlightCi == null) return { w: 2.2, op: 1,    mr: 3.4 };
+  if (ci === highlightCi)  return { w: 4.2, op: 1,    mr: 5.0 };
+  return                          { w: 1.4, op: 0.15, mr: 2.6 };
+}
+// invisible fat line drawn under the thin visible one, so the line is easy to click
+function hitLine(ptsStr, ci){
+  return `<polyline points="${ptsStr}" fill="none" stroke="transparent" stroke-width="14"`
+       + ` data-ci="${ci}" style="cursor:pointer"/>`;
+}
+// delegated click handler: click a line/marker -> toggle its highlight; click empty space -> clear
+function attachHighlight(hostId){
+  const svg = document.querySelector("#" + hostId + " svg");
+  if (!svg) return;
+  svg.addEventListener("click", e => {
+    const t = e.target.closest("[data-ci]");
+    const ci = t ? +t.dataset.ci : null;
+    highlightCi = (ci != null && ci === highlightCi) ? null : ci;   // toggle / clear
+    drawChart();
+    drawRobustness();
+  });
+}
+
 function buildAgg(y0, y1, allow){
   const years = []; for (let y = y0; y <= y1; y++) years.push(y);
   const agg = DATA.confs.map(() => Object.fromEntries(years.map(y => [y, {n:0, d:0}])));
-  for (const [ci, yr, ji, ti, n] of DATA.rows){
+  for (const [ci, yr, ji, ti, n] of activeRows()){
     if (yr < y0 || yr > y1) continue;
     agg[ci][yr].d += n;
     if (ji >= 0 && sel.has(ji) && (allow === null || allow.has(ti))) agg[ci][yr].n += n;
@@ -948,6 +1029,7 @@ function niceMax(vals, metricRate){
 }
 
 function drawChart(){
+  if (highlightCi != null && !confSel.has(highlightCi)) highlightCi = null;  // dropped -> clear
   const y0 = +document.getElementById("ymin").value;
   const y1 = +document.getElementById("ymax").value;
   const allow = allowedTiers();
@@ -982,7 +1064,7 @@ function drawRobustness(){
   const nL = TIER_GROUPS.length;
   const denom = new Array(DATA.confs.length).fill(0);
   const numAt = DATA.confs.map(() => new Array(nL).fill(0));
-  for (const [ci, yr, ji, ti, n] of DATA.rows){
+  for (const [ci, yr, ji, ti, n] of activeRows()){
     if (yr < y0 || yr > y1) continue;
     denom[ci] += n;
     if (ji >= 0 && sel.has(ji) && ti >= 0) numAt[ci][INTRO[ti]] += n;
@@ -1015,20 +1097,25 @@ function drawRobustness(){
     svg += `<text x="${X(L)}" y="${H-padB+16}" text-anchor="middle">${lab}</text>`);
   svg += `<line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
   for (const s of vis){
+    const em = lineEmph(s.ci);
     const pts = s.pts.filter(p => p.v != null);
-    if (pts.length > 1)
-      svg += `<polyline stroke="${s.color}" stroke-dasharray="${s.dash}" points="${
-        pts.map(p => `${X(p.L).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ")}"/>`;
+    if (pts.length > 1){
+      const ptsStr = pts.map(p => `${X(p.L).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ");
+      svg += hitLine(ptsStr, s.ci);
+      svg += `<polyline data-ci="${s.ci}" stroke="${s.color}" stroke-dasharray="${s.dash}"`
+           + ` stroke-width="${em.w}" opacity="${em.op}" style="cursor:pointer" points="${ptsStr}"/>`;
+    }
     for (const p of pts){
       const lbl = metricRate ? (p.v*100).toFixed(1)+"%" : p.v;
-      svg += `<g><title>${esc(clabel(s.ci))} at "${LEVEL_LABELS[p.L]}": ${lbl} (${p.n}/${p.d})</title>`
-           + marker(X(p.L).toFixed(1), Y(p.v).toFixed(1), s.marker, s.color, 3.4) + `</g>`;
+      svg += `<g data-ci="${s.ci}" opacity="${em.op}" style="cursor:pointer"><title>${esc(clabel(s.ci))} at "${LEVEL_LABELS[p.L]}": ${lbl} (${p.n}/${p.d})</title>`
+           + marker(X(p.L).toFixed(1), Y(p.v).toFixed(1), s.marker, s.color, em.mr) + `</g>`;
     }
   }
   if (!vis.length) svg += `<text x="${W/2}" y="${H/2}" text-anchor="middle"`
                         + ` fill="#9aa">Select a conference below</text>`;
   svg += `</svg>`;
   document.getElementById("chart2").innerHTML = svg;
+  attachHighlight("chart2");
   document.getElementById("chartsub2").textContent =
     (metricRate ? "Publication rate" : "Number of publications")
     + ". Each step along the x-axis adds a matching procedure (Exact titles → + strong"
@@ -1071,31 +1158,37 @@ function drawTimeChart(years, agg, metricRate){
     svg += `<text x="${X(y)}" y="${H-padB+16}" text-anchor="middle">${y}</text>`; });
   svg += `<line class="axis" x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}"/>`;
   for (const s of vis){
+    const em = lineEmph(s.ci);
     // break the line at missing years rather than bridging across the gap
     const segs = []; let seg = [];
     for (const p of s.pts){ if (p.v != null) seg.push(p); else if (seg.length){ segs.push(seg); seg = []; } }
     if (seg.length) segs.push(seg);
     for (const sg of segs){
-      if (sg.length > 1)
-        svg += `<polyline stroke="${s.color}" stroke-dasharray="${s.dash}" points="${
-          sg.map(p => `${X(p.y).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ")}"/>`;
+      if (sg.length > 1){
+        const ptsStr = sg.map(p => `${X(p.y).toFixed(1)},${Y(p.v).toFixed(1)}`).join(" ");
+        svg += hitLine(ptsStr, s.ci);
+        svg += `<polyline data-ci="${s.ci}" stroke="${s.color}" stroke-dasharray="${s.dash}"`
+             + ` stroke-width="${em.w}" opacity="${em.op}" style="cursor:pointer" points="${ptsStr}"/>`;
+      }
     }
     for (const p of s.pts){
       if (p.v == null) continue;
       const lbl = metricRate ? (p.v*100).toFixed(1)+"%" : p.v;
-      svg += `<g><title>${esc(clabel(s.ci))} ${p.y}: ${lbl} (${p.n}/${p.d})</title>`
-           + marker(X(p.y).toFixed(1), Y(p.v).toFixed(1), s.marker, s.color, 3.4) + `</g>`;
+      svg += `<g data-ci="${s.ci}" opacity="${em.op}" style="cursor:pointer"><title>${esc(clabel(s.ci))} ${p.y}: ${lbl} (${p.n}/${p.d})</title>`
+           + marker(X(p.y).toFixed(1), Y(p.v).toFixed(1), s.marker, s.color, em.mr) + `</g>`;
     }
   }
   if (!vis.length) svg += `<text x="${W/2}" y="${H/2}" text-anchor="middle"`
                         + ` fill="#9aa">Select a conference below</text>`;
   svg += `</svg>`;
   document.getElementById("chart").innerHTML = svg;
+  attachHighlight("chart");
   document.getElementById("charttitle").textContent =
     (metricRate ? "Publication rate" : "Publications") + " over time";
   document.getElementById("chartsub").innerHTML =
     (metricRate ? "Publication rate" : "Number of publications")
-    + " by conference year, using the selected journals and confidence. Click a"
+    + " by conference year, using the selected journals and confidence. <b>Click a line</b>"
+    + " to highlight it (click it again or click empty space to reset); click a"
     + " conference below to show/hide it; hover a point for details. Years with no"
     + " collected program are skipped. Note that the most recent cohorts are <b>right-censored</b> —"
     + " papers presented then are still being published, so those points are biased downward.";
@@ -1144,8 +1237,10 @@ function drawTotalChart(agg, metricRate, y0, y1){
   rows.forEach((r, i) => {
     const x = cx(i), top = Y(r.v), h = padT + plotH - top;
     const lbl = metricRate ? (100*r.v).toFixed(1)+"%" : r.n;
-    svg += `<g><title>${esc(clabel(r.ci))}: ${lbl} (${r.n}/${r.d})</title>`
-         + `<rect x="${x-bw/2}" y="${top}" width="${bw}" height="${h}" rx="3" fill="${r.color}"/></g>`;
+    const em = lineEmph(r.ci);
+    const outline = (highlightCi === r.ci) ? ` stroke="#1a1a0e" stroke-width="1.5"` : "";
+    svg += `<g data-ci="${r.ci}" opacity="${em.op}" style="cursor:pointer"><title>${esc(clabel(r.ci))}: ${lbl} (${r.n}/${r.d})</title>`
+         + `<rect x="${x-bw/2}" y="${top}" width="${bw}" height="${h}" rx="3" fill="${r.color}"${outline}/></g>`;
     svg += `<text x="${x}" y="${top-5}" text-anchor="middle" style="font-weight:600">${lbl}</text>`;
     svg += rot
       ? `<text x="${x}" y="${padT+plotH+14}" text-anchor="end"`
@@ -1156,6 +1251,7 @@ function drawTotalChart(agg, metricRate, y0, y1){
                          + ` fill="#9aa">Select a conference below</text>`;
   svg += `</svg>`;
   document.getElementById("chart").innerHTML = svg;
+  attachHighlight("chart");
   document.getElementById("charttitle").textContent =
     (metricRate ? "Publication rate" : "Publications") + ", whole period";
   document.getElementById("chartsub").textContent =
@@ -1208,6 +1304,19 @@ function buildMethod(){
        <span class="stat">${accepted.toLocaleString()}</span>
        (${(100*accepted/presented).toFixed(1)}%) are matched to a tracked-journal
        publication overall.</p>
+
+    <h3>Field-specific rankings</h3>
+    <p>Some journals publish more in certain areas, so a conference that specialises in a
+       popular field can rank higher simply for that reason. Following
+       <a href="https://doi.org/10.1016/j.jempfin.2025.101652" target="_blank" rel="noopener">Hou,
+       Smajlbegović &amp; Urban (2025), Section 3.2</a>, the <b>Research field</b> control lets
+       you rank conferences <i>within</i> one field — asset pricing, corporate finance, financial
+       intermediation, market microstructure, behavioural finance or household finance. Each paper
+       is assigned to a field by counting keywords from the paper's word bank (Appendix E of that
+       paper) in its <b>title and session name</b>; specialised meetings (e.g. NBER Asset Pricing)
+       are assigned by their conference name; ties place a paper in more than one field. About
+       <span class="stat">86%</span> of papers are classified this way, and the resulting field
+       shares track the paper's own figures closely.</p>
 
     <h3>How a paper is matched to a publication</h3>
     <p>For every conference paper and candidate journal article we compute two base
