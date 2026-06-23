@@ -144,6 +144,22 @@
   table.acktab td.pct { font-variant-numeric:tabular-nums; min-width:64px; }
   table.acktab tr.anyrow td { border-top:2px solid #d9c84a; font-style:italic; }
   table.acktab tr.anyrow td.cn { font-style:normal; color:var(--muted); }
+  /* paper lifecycle stage (diverging bars: early-stage left, late-stage right) */
+  .stageaxis { display:flex; justify-content:space-between; font-size:11px; color:var(--muted);
+        font-weight:600; margin:2px 0 6px; max-width:760px; }
+  .stagerow { display:flex; align-items:center; gap:8px; font-size:12px; margin:1.5px 0; }
+  .stagerow .sl { width:150px; text-align:right; flex:none; color:var(--ink);
+        overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .strack { position:relative; flex:1; max-width:560px; height:15px; background:#f3f4f6;
+        border-radius:3px; min-width:180px; }
+  .strack .szero { position:absolute; left:50%; top:-2px; bottom:-2px; width:1px; background:#c7ced6; }
+  .sfill { position:absolute; top:0; bottom:0; border-radius:3px; }
+  .sfill.early { background:#2f6fb0; }
+  .sfill.late  { background:#e0a800; }
+  .stagerow.single .sfill { opacity:.5; }
+  .stagerow .sv { width:40px; flex:none; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .stagerow .sg { width:14px; flex:none; color:#b9c0c9; font-weight:700; cursor:help; }
+  @media (max-width:640px){ .stagerow .sl { width:96px; } .strack { min-width:120px; } }
   /* small-sample indicator */
   .ssmark { color:#c0392b; font-weight:700; cursor:help; }
   tr.smallrow td { color:var(--muted); }
@@ -266,8 +282,10 @@
   <nav class="sitemap">
     <a href="#ranking">Ranking</a>
     <a href="#charts">Charts</a>
-    <a href="#unisection">Universities</a>
+    <a href="#uniexpl">Universities</a>
     <a href="#acksection">Acknowledgements</a>
+    <a href="#stagesection">Lifecycle stage</a>
+    <a href="#launchpad">Launch-pads</a>
     <a href="#stats">Descriptive stats</a>
     <a href="#methodology">How it works</a>
     <a href="#about">About</a>
@@ -386,15 +404,46 @@
   </div><!-- /rightcol -->
 </main>
 
-<!-- UNIVERSITY DISTRIBUTION (full width, own section) -->
+<!-- INSTITUTIONS EXPLORER (interactive: any conferences + years) -->
+<!-- (replaces the former static "University distribution" panel — the explorer subsumes it) -->
+<style>
+#uniexpl .uxgrid{display:grid;grid-template-columns:240px 1fr;gap:18px;align-items:start}
+@media(max-width:700px){#uniexpl .uxgrid{grid-template-columns:1fr}}
+#uniexpl .uxlist{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin:8px 0}
+#uniexpl .uxlist label{display:flex;gap:7px;align-items:center;font-size:12.5px;padding:2px 0;cursor:pointer}
+#uniexpl .uxlist label:hover{color:var(--accent)}
+#uniexpl .uxrow{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px}
+#uniexpl .uxrow select,#uniexpl .uxrow input{padding:4px 6px;border:1px solid var(--line);border-radius:6px}
+#uniexpl table{width:100%;border-collapse:collapse}
+#uniexpl td,#uniexpl th{padding:5px 8px;border-bottom:1px solid var(--line);font-size:13px;text-align:left}
+#uniexpl th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+#uniexpl td.r,#uniexpl th.r{text-align:right;font-variant-numeric:tabular-nums}
+#uniexpl .rk{color:var(--muted);width:28px}
+</style>
 <div class="wide">
-  <section class="card" id="unisection">
-    <h2>University distribution</h2>
-    <p class="summary">Which institutions present most — pick a group, or a single conference.
-      <span class="hint" id="statsUniNote"></span></p>
-    <div class="presets" id="uniGroupBtns"></div>
-    <div class="uniconf">or a single conference: <select id="uniSel"></select></div>
-    <div id="statsUni" class="statwrap"></div>
+  <section class="card" id="uniexpl">
+    <h2>Institutions explorer</h2>
+    <p class="summary">Build a top-institutions list for any set of conferences and any year range — pick conferences, set the years, and the ranking updates live.
+      <span class="hint">Presenter-affiliation appearances on collected programs; a multi-authored paper contributes several, so this approximates attendance, not unique people.</span></p>
+    <div class="uxgrid">
+      <div>
+        <div class="presets" id="uxBtns"><button data-p="all">All</button><button data-p="big5">Big 5</button><button data-p="none">Clear</button></div>
+        <div id="uxConfs" class="uxlist"></div>
+        <div class="uxrow"><span>Years</span><select id="uxYmin"></select><span>–</span><select id="uxYmax"></select></div>
+        <div class="uxrow"><span>Show top</span><input id="uxTopN" type="number" min="5" max="200" value="25" style="width:70px"></div>
+        <div class="uxrow" style="display:block;margin-top:10px"><div style="font-size:12px;color:var(--muted)">Or focus on ONE institution:</div>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <input id="uxFocus" list="uxUniList" placeholder="type an institution…" style="flex:1;min-width:0;padding:5px 8px;border:1px solid var(--line);border-radius:6px">
+            <button id="uxFocusClear" type="button" title="clear" style="flex:none;padding:5px 11px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;color:var(--muted)">✕</button>
+          </div>
+          <datalist id="uxUniList"></datalist></div>
+      </div>
+      <div>
+        <p class="summary" id="uxSummary"></p>
+        <input class="confsearch" id="uxSearch" placeholder="filter institutions in the list below…">
+        <div id="uxTable"></div>
+      </div>
+    </div>
   </section>
 </div>
 
@@ -419,6 +468,57 @@
     <div class="legend" id="ackLegend"></div>
 
     <p class="hint" id="ackNote"></p>
+  </section>
+</div>
+
+<!-- PAPER LIFECYCLE STAGE (full width, own section) -->
+<div class="wide">
+  <section class="card" id="stagesection">
+    <h2>Early- vs late-stage conferences</h2>
+    <p class="summary" id="stageIntro"></p>
+    <div class="presets" id="stageGroupBtns"></div>
+    <div class="stageaxis"><span>&larr; earlier-stage (fresh work)</span>
+      <span>later-stage (near-final) &rarr;</span></div>
+    <div id="stageBars" class="statwrap"></div>
+    <p class="hint" id="stageNote"></p>
+  </section>
+</div>
+
+<!-- LAUNCH-PADS & DESTINATIONS (full width, interactive; launchpad.json) -->
+<style>
+#launchpad .lpctrls{display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-bottom:4px}
+#launchpad .lpctrls label{font-size:11.5px;color:var(--muted);margin-right:5px;text-transform:uppercase;letter-spacing:.03em}
+#launchpad select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px}
+#launchpad .seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+#launchpad .seg button{border:0;background:#fff;padding:5px 10px;font-size:12px;cursor:pointer;color:var(--muted)}
+#launchpad .seg button.on{background:var(--accent);color:#fff}
+#launchpad .lpcols{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px}
+@media(max-width:680px){#launchpad .lpcols{grid-template-columns:1fr}}
+#launchpad .lpcols h3{font-size:12.5px;margin:0 0 8px}
+#launchpad .uph3{color:#2f6fb0}#launchpad .downh3{color:#b07d00}
+#launchpad .lprow{display:flex;align-items:center;gap:8px;font-size:12.5px;margin:2.5px 0}
+#launchpad .lprow .nm{width:118px;flex:none;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#launchpad .lptrack{flex:1;background:#eef1f5;border-radius:4px;height:16px;position:relative}
+#launchpad .lpfill{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+#launchpad .lprow .v{width:106px;flex:none;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+</style>
+<div class="wide">
+  <section class="card" id="launchpad">
+    <h2>Launch-pads &amp; destinations</h2>
+    <p class="summary">Pick a conference: where the papers shown there had appeared <b>earlier</b> on the circuit (its feeders) and where they went <b>next</b> (its destinations), with how many papers and the typical lead time.
+      <span class="hint">“Earlier / later” is position on the circuit, not a causal effect on the paper.</span></p>
+    <div class="lpctrls">
+      <div><label>Conference</label><select id="lpFocus"></select></div>
+      <div><label>Same-year</label><span class="seg" id="lpTie"><button data-m="month" class="on">by month</button><button data-m="tie">tied</button></span></div>
+      <div><label>Papers</label><span class="seg" id="lpPub"><button data-p="0" class="on">all</button><button data-p="1">top-6 published</button><button data-p="2">top-3 published</button></span></div>
+    </div>
+    <p class="hint" id="lpModeNote"></p>
+    <p class="summary" id="lpSummary"></p>
+    <div class="lpcols">
+      <div><h3 class="uph3" id="lpUpH">arrived from ▸</h3><div id="lpUp"></div></div>
+      <div><h3 class="downh3" id="lpDownH">▸ moved on to</h3><div id="lpDown"></div></div>
+    </div>
+    <p class="hint" id="lpFoot"></p>
   </section>
 </div>
 
@@ -525,6 +625,142 @@ fetch("data.json?v=" + Date.now()).then(r => r.json()).then(d => { DATA = d; ini
     "Could not load data.json — serve this folder over http (e.g. `python -m http.server`) "
     + "rather than opening the file directly."; });
 
+// ---------- Institutions explorer (interactive; universities.json) ----------
+fetch("universities.json?v=" + Date.now()).then(r => r.json()).then(initUniExplorer)
+  .catch(() => { const s = document.getElementById("uniexpl"); if (s) s.style.display = "none"; });
+
+// ---------- Launch-pads & destinations (interactive; launchpad.json) ----------
+fetch("launchpad.json?v=" + Date.now()).then(r => r.json()).then(initLaunchpad)
+  .catch(() => { const s = document.getElementById("launchpad"); if (s) s.style.display = "none"; });
+function initLaunchpad(D){
+  let MODE = "month", PUB = 0, FC = D.focusable[0];
+  const sel = document.getElementById("lpFocus");
+  D.focusable.forEach(i => { const o = document.createElement("option"); o.value = i; o.textContent = D.confs[i][1]; sel.appendChild(o); });
+  const afa = D.focusable.find(i => D.confs[i][0] === "AFA"); if (afa != null) { FC = afa; sel.value = afa; }
+  sel.onchange = () => { FC = +sel.value; render(); };
+  document.getElementById("lpTie").addEventListener("click", e => { const m = e.target.dataset.m; if (m == null) return;
+    document.querySelectorAll("#lpTie button").forEach(b => b.classList.remove("on")); e.target.classList.add("on"); MODE = m; render(); });
+  document.getElementById("lpPub").addEventListener("click", e => { const p = e.target.dataset.p; if (p == null) return;
+    document.querySelectorAll("#lpPub button").forEach(b => b.classList.remove("on")); e.target.classList.add("on"); PUB = +p; render(); });
+  const frac = (ci, yr) => MODE === "tie" ? yr : yr + ((D.months[ci] || 6.5) - 0.5) / 12;
+  const median = a => { if (!a.length) return null; a = a.slice().sort((x, y) => x - y); const h = a.length >> 1; return a.length % 2 ? a[h] : (a[h - 1] + a[h]) / 2; };
+  function bars(host, obj, color, dir){
+    let arr = Object.keys(obj).map(ci => ({ ci: +ci, n: obj[ci].n, g: median(obj[ci].g) })).sort((a, b) => b.n - a.n).slice(0, 10);
+    const mx = arr.length ? arr[0].n : 1;
+    host.innerHTML = arr.map(r => { const w = Math.max(3, 100 * r.n / mx);
+      const gap = r.g == null ? "" : (MODE === "tie" ? " · " + Math.round(r.g / 12) + "y " + dir : " · " + Math.round(r.g) + " mo " + dir);
+      return '<div class=lprow><span class=nm title="' + String(D.confs[r.ci][2] || "").replace(/"/g, "&quot;") + '">' + D.confs[r.ci][1] + '</span>'
+        + '<span class=lptrack><span class=lpfill style="width:' + w + '%;background:' + color + '"></span></span>'
+        + '<span class=v>' + r.n + gap + '</span></div>';
+    }).join("") || '<div class="hint">none</div>';
+  }
+  function render(){
+    const up = {}, down = {}; let nInc = 0, nFirst = 0, nLast = 0;
+    for (let ci = 0; ci < D.chains.length; ci++){
+      if (D.pubs[ci] < PUB) continue;
+      const ch = D.chains[ci];
+      let fc = null; for (const v of ch) if (v[0] === FC){ const f = frac(v[0], v[1]); if (fc == null || f < fc) fc = f; }
+      if (fc == null) continue;
+      nInc++; let anyB = false, anyA = false; const su = {}, sd = {};
+      for (const v of ch){ if (v[0] === FC) continue; const f = frac(v[0], v[1]);
+        if (f < fc){ anyB = true; const g = (fc - f) * 12; if (!(v[0] in su) || g < su[v[0]]) su[v[0]] = g; }
+        else if (f > fc){ anyA = true; const g = (f - fc) * 12; if (!(v[0] in sd) || g < sd[v[0]]) sd[v[0]] = g; } }
+      for (const x in su){ (up[x] = up[x] || { n: 0, g: [] }); up[x].n++; up[x].g.push(su[x]); }
+      for (const x in sd){ (down[x] = down[x] || { n: 0, g: [] }); down[x].n++; down[x].g.push(sd[x]); }
+      if (!anyB) nFirst++; if (!anyA) nLast++;
+    }
+    const labf = D.confs[FC][1];
+    const pl = PUB === 2 ? "top-3-published " : PUB === 1 ? "top-6-published " : "";
+    document.getElementById("lpSummary").innerHTML = "<b>" + labf + "</b> shares <b>" + nInc.toLocaleString() + "</b> " + pl
+      + "papers with other conferences · DEBUT (first stop) for <b>" + (nInc ? Math.round(100 * nFirst / nInc) : 0)
+      + "%</b>, LAST stop for <b>" + (nInc ? Math.round(100 * nLast / nInc) : 0) + "%</b>.";
+    document.getElementById("lpUpH").innerHTML = "Papers at " + labf + " arrived from ▸";
+    bars(document.getElementById("lpUp"), up, "#2f6fb0", "earlier");
+    bars(document.getElementById("lpDown"), down, "#e0a800", "later");
+    document.getElementById("lpModeNote").textContent = MODE === "month"
+      ? "Within-year order uses each conference's calendar slot; lead times are median months between venues."
+      : "Same-year appearances are treated as tied — only different-year hops count; lead times shown in whole years.";
+    document.getElementById("lpFoot").textContent =
+      "Counts = multi-venue papers; feeders / destinations span all tracked conferences. Cohort = the 2013–2022 pooled conference-years.";
+  }
+  render();
+}
+function initUniExplorer(U){
+  const sel = new Set(U.confs.map((_, i) => i));
+  const list = document.getElementById("uxConfs");
+  U.confs.forEach((c, i) => {
+    const l = document.createElement("label");
+    l.innerHTML = '<input type=checkbox data-i="' + i + '" checked> <span title="'
+      + String(c[2] || "").replace(/"/g, "&quot;") + '">' + c[1] + '</span>';
+    list.appendChild(l);
+  });
+  list.addEventListener("change", e => { const i = +e.target.dataset.i;
+    if (e.target.checked) sel.add(i); else sel.delete(i); draw(); });
+  const ymin = document.getElementById("uxYmin"), ymax = document.getElementById("uxYmax");
+  for (let y = U.ymin; y <= U.ymax; y++) { ymin.add(new Option(y, y)); ymax.add(new Option(y, y)); }
+  ymin.value = U.ymin; ymax.value = U.ymax;
+  ymin.onchange = ymax.onchange = () => { if (+ymin.value > +ymax.value) ymax.value = ymin.value; draw(); };
+  document.getElementById("uxTopN").oninput = draw;
+  document.getElementById("uxSearch").oninput = draw;
+  const focusEl = document.getElementById("uxFocus"); focusEl.oninput = draw;
+  const fclr = document.getElementById("uxFocusClear");
+  if (fclr) fclr.onclick = () => { focusEl.value = ""; focusEl.focus(); draw(); };
+  const dl = document.getElementById("uxUniList");
+  U.unis.forEach(u => { const o = document.createElement("option"); o.value = u; dl.appendChild(o); });
+  document.getElementById("uxBtns").addEventListener("click", e => {
+    const p = e.target.dataset.p; if (!p) return;
+    document.querySelectorAll("#uxConfs input").forEach(cb => {
+      const i = +cb.dataset.i, on = p === "all" ? true : p === "none" ? false : U.big5.indexOf(i) >= 0;
+      cb.checked = on; if (on) sel.add(i); else sel.delete(i);
+    });
+    draw();
+  });
+  const THU = "<tr><th class=rk>#</th><th>Institution</th><th class=r>Appearances</th><th class=r>Share</th><th></th></tr>";
+  const THC = "<tr><th class=rk>#</th><th>Conference</th><th class=r>Appearances</th><th class=r>Share</th><th></th></tr>";
+  const tbl = (th, rows) => "<table><thead>" + th + "</thead><tbody>"
+    + (rows || "<tr><td colspan=5 style=color:#889;padding:14px>Nothing for this selection.</td></tr>") + "</tbody></table>";
+  function draw(){
+    const y0 = +ymin.value, y1 = +ymax.value;
+    const res = document.getElementById("uxTable"), sum = document.getElementById("uxSummary"),
+          searchBox = document.getElementById("uxSearch");
+    const focus = focusEl.value.trim().toLowerCase();
+    const fu = focus ? U.unis.findIndex(u => u.toLowerCase() === focus) : -1;
+    if (fu >= 0) {                 // SINGLE-INSTITUTION mode: which conferences it attends
+      searchBox.style.display = "none";
+      const per = {}; let total = 0;
+      for (const c of U.cells) { if (c[2] !== fu || c[1] < y0 || c[1] > y1 || !sel.has(c[0])) continue;
+        per[c[0]] = (per[c[0]] || 0) + c[3]; total += c[3]; }
+      let arr = Object.keys(per).map(ci => [+ci, per[ci]]).sort((a, b) => b[1] - a[1]);
+      const max = arr.length ? arr[0][1] : 1;
+      sum.innerHTML = "<b>" + U.unis[fu] + "</b> · <b>" + total.toLocaleString() + "</b> appearances across <b>"
+        + arr.length + "</b> conference" + (arr.length != 1 ? "s" : "") + " · " + y0 + "–" + y1;
+      res.innerHTML = tbl(THC, arr.map((x, i) => { const sh = total ? 100 * x[1] / total : 0, w = Math.max(2, 100 * x[1] / max);
+        return "<tr><td class=rk>" + (i + 1) + "</td><td title=\"" + String(U.confs[x[0]][2] || "").replace(/"/g, "&quot;")
+          + "\">" + U.confs[x[0]][1] + "</td><td class=r>" + x[1].toLocaleString() + "</td><td class=r>" + sh.toFixed(1)
+          + "%</td><td style=width:120px><div class=barwrap><div class=bar style=width:" + w + "%></div></div></td></tr>";
+      }).join(""));
+      return;
+    }
+    searchBox.style.display = "";   // TOP-INSTITUTIONS mode
+    const q = searchBox.value.trim().toLowerCase(), topn = +document.getElementById("uxTopN").value || 25;
+    const tot = new Float64Array(U.unis.length); let slots = 0;
+    for (const c of U.cells) { if (c[1] < y0 || c[1] > y1 || !sel.has(c[0])) continue; tot[c[2]] += c[3]; slots += c[3]; }
+    let arr = []; for (let u = 0; u < U.unis.length; u++) if (tot[u] > 0) arr.push([u, tot[u]]);
+    arr.sort((a, b) => b[1] - a[1]);
+    const max = arr.length ? arr[0][1] : 1;
+    if (q) arr = arr.filter(x => U.unis[x[0]].toLowerCase().indexOf(q) >= 0);
+    const show = arr.slice(0, topn);
+    sum.innerHTML = "<b>" + slots.toLocaleString() + "</b> appearances · <b>" + arr.length.toLocaleString()
+      + "</b> institutions · <b>" + sel.size + "</b> conference" + (sel.size != 1 ? "s" : "") + " · " + y0 + "–" + y1;
+    res.innerHTML = tbl(THU, show.map((x, i) => { const sh = slots ? 100 * x[1] / slots : 0, w = Math.max(2, 100 * x[1] / max);
+      return "<tr><td class=rk>" + (i + 1) + "</td><td>" + U.unis[x[0]] + "</td><td class=r>" + x[1].toLocaleString()
+        + "</td><td class=r>" + sh.toFixed(1) + "%</td><td style=width:120px><div class=barwrap><div class=bar style=width:"
+        + w + "%></div></div></td></tr>";
+    }).join(""));
+  }
+  draw();
+}
+
 // ---------- Descriptive statistics (aggregates-only stats.json) ----------
 function loadStats(){
   fetch("stats.json?v=" + Date.now()).then(r => r.json()).then(renderStats)
@@ -563,39 +799,89 @@ function renderStats(S){
 
   // -- paper overlap (panel hidden for now; markup commented out in the stats section) --
 
-  // -- university distribution (own section: group BUTTONS + a single-conference dropdown) --
-  const U = S.universities, uniSec = document.getElementById("unisection");
-  const bars = (arr) => { const m = arr.length ? arr[0][1] : 1; return arr.slice(0, 15).map(([n, v]) =>
-    `<div class="ubar"><span class="ul">${esc(n)}</span>`
-    + `<span class="ubarfill" style="width:${Math.max(2, 100 * v / m).toFixed(0)}px"></span>`
-    + `<span class="uv">${v}</span></div>`).join(''); };
-  if (U && U.confs_with_data && U.confs_with_data.length){
-    const out = document.getElementById("statsUni");
-    const gbtns = document.getElementById("uniGroupBtns");
-    const selU = document.getElementById("uniSel");
-    const clearActive = () => gbtns.querySelectorAll("button").forEach(b => b.classList.remove("on"));
-    // group buttons
-    gbtns.innerHTML = "";
-    (U.group_order || []).forEach(g => {
-      const b = document.createElement("button");
-      b.textContent = g;
-      b.onclick = () => { clearActive(); b.classList.add("on"); selU.value = "";
-                          out.innerHTML = bars((U.per_group || {})[g] || []); };
-      gbtns.appendChild(b);
-    });
-    // single-conference dropdown
-    selU.innerHTML = '<option value="">— select —</option>'
-      + U.confs_with_data.map(c => `<option value="${esc(c)}">${esc(lab(c))}</option>`).join('');
-    selU.onchange = () => { if (selU.value){ clearActive(); out.innerHTML = bars(U.per_conf[selU.value] || []); } };
-    document.getElementById("statsUniNote").textContent =
-      `(${U.confs_with_data.length} of ${DATA.confs.length} conferences have affiliation data)`;
-    // default: Big 5 group (else first group, else first conference)
-    const firstBtn = gbtns.querySelector("button");
-    if (firstBtn) firstBtn.click();
-    else { selU.value = U.confs_with_data[0]; selU.onchange(); }
-  } else if (uniSec) { uniSec.style.display = "none"; }
+  // -- university distribution panel removed 2026-06-23: the interactive Institutions explorer
+  //    section (fed by universities.json) replaces it. S.universities is now unused. --
 
   renderAck(S);
+  renderStage(S);
+}
+
+// ---------- Paper lifecycle stage panel (early- vs late-stage venues) ----------
+function renderStage(S){
+  const P = S.paper_stage, sec = document.getElementById("stagesection");
+  if (!P || !P.confs || !P.order || !P.order.length){ if (sec) sec.style.display = "none"; return; }
+  const id2lab = {}; DATA.confs.forEach((c, i) => id2lab[c] = DATA.conf_labels[i] || c);
+  const lab = c => id2lab[c] || c;
+  const esc = s => String(s).replace(/[&<>"]/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));
+  const m = P.meta;
+
+  document.getElementById("stageIntro").innerHTML =
+    "Where in a paper's life does each conference catch it? <b>Early-stage</b> venues present"
+    + " work years before it reaches a journal; <b>late-stage</b> venues present papers already"
+    + " near acceptance. Two independent measures combine into a late-stage score: (1) the"
+    + " <b>publication lag</b> from presentation to journal print, net of journal and year"
+    + " (short lag = late-stage); and (2) the <b>debut order</b> &mdash; for papers shown at"
+    + " several ranked conferences, whether this one is typically an early or a late stop."
+    + " The two signals agree (Spearman " + m.spearman.toFixed(2) + ").";
+
+  // group membership from data.json groups (Big 5 / Small / Large) + an All option
+  const groupConfs = {"All conferences": DATA.confs.slice()};
+  (DATA.groups || []).forEach(([g, idxs]) => groupConfs[g] = idxs.map(i => DATA.confs[i]));
+  // "Large" is a superset that also includes the Big 5 (Big 5 stays as its own button)
+  if (groupConfs["Large"] && groupConfs["Big 5"]) groupConfs["Large"] = groupConfs["Large"].concat(groupConfs["Big 5"]);
+  const order = ["All conferences", "Big 5", "Small", "Large"].filter(g => groupConfs[g]);
+
+  const maxAbs = Math.max(0.5, ...P.order.map(c => Math.abs(P.confs[c].composite || 0)));
+  const bars = document.getElementById("stageBars");
+  const draw = (g) => {
+    const set = new Set(groupConfs[g] || []);
+    const rows = P.order.filter(c => set.has(c));   // P.order is already sorted early -> late
+    bars.innerHTML = rows.map(c => {
+      const d = P.confs[c], v = d.composite || 0;
+      const w = (Math.abs(v) / maxAbs) * 50;          // % of half-track
+      const side = v < 0 ? "right:50%" : "left:50%";
+      const cls = v < 0 ? "early" : "late";
+      const single = (d.late_lag == null || d.late_debut == null);
+      const tip = [
+        lab(c) + (DATA.conf_names && DATA.conf_names[c] ? " — " + DATA.conf_names[c] : ""),
+        "late-stage score " + v.toFixed(2),
+        d.mean_gap != null ? "mean " + d.mean_gap + " yrs to publication (n=" + d.n_acc + ")" : null,
+        d.share_late != null ? Math.round(d.share_late * 100) + "% published at/before the conference; "
+          + Math.round(d.share_early * 100) + "% still ≥4 yrs from publication" : null,
+        d.debut_pos != null ? "debut position " + d.debut_pos + " (0=first stop, 1=last; n="
+          + d.n_multivenue + ")" : null,
+        d.first_venue_share != null ? Math.round(d.first_venue_share * 100)
+          + "% of its multi-venue papers debut here" : null,
+        single ? "(scored on one signal only)" : null
+      ].filter(Boolean).join("\n");
+      return `<div class="stagerow${single ? " single" : ""}" title="${esc(tip)}">`
+        + `<span class="sl">${esc(lab(c))}</span>`
+        + `<div class="strack"><div class="szero"></div>`
+        + `<div class="sfill ${cls}" style="${side};width:${w.toFixed(1)}%"></div></div>`
+        + `<span class="sv">${v > 0 ? "+" : ""}${v.toFixed(1)}</span>`
+        + `<span class="sg">${single ? "‡" : ""}</span></div>`;
+    }).join("");
+  };
+
+  const btns = document.getElementById("stageGroupBtns");
+  btns.innerHTML = "";
+  order.forEach(g => {
+    const b = document.createElement("button"); b.textContent = g;
+    b.onclick = () => { btns.querySelectorAll("button").forEach(x => x.classList.remove("on"));
+                        b.classList.add("on"); draw(g); };
+    btns.appendChild(b);
+  });
+  // default = Large (the established large conferences, incl. the Big 5); falls back to the first
+  (Array.from(btns.querySelectorAll("button")).find(b => b.textContent === "Large")
+    || btns.querySelector("button")).click();
+
+  document.getElementById("stageNote").innerHTML =
+    "Late-stage score = average of two z-scored signals (higher = later stage). The publication-lag"
+    + " signal covers conferences with at least " + m.min_n + " linked papers; the debut-order signal"
+    + " those with at least " + m.min_multivenue + " papers also seen at another ranked conference."
+    + " ‡ = scored on one signal only (less robust). Hover a bar for the underlying numbers."
+    + " Based on " + m.n_accepted.toLocaleString() + " linked papers and "
+    + m.multivenue_papers.toLocaleString() + " multi-venue papers, " + m.year_min + "–" + m.year_max + ".";
 }
 
 // ---------- Conference acknowledgements panel ----------
